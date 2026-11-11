@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Society;
-use Hash;
+use Exception;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -16,13 +17,12 @@ class AuthController extends Controller
         ]);
         $society = Society::where('id_card_number', $request->id_card_number)->first();
 
-        if (!$society || Hash::check($society->password, $request->password)) {
+        if (!$society || $society->password !== $request->password) {
             return response()->json([
                 'message' => 'ID card number or password incorrect'
             ]);
         }
 
-        $society->tokens->delete();
         $token = $society->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -43,9 +43,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken->delete();
-        return response()->json([
-            'message' => 'Logout success'
-        ]);
+        try {
+            $request->user()->currentAccessToken()->delete();
+            return response()->json([
+                'message' => 'Logout success'
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Invalid token'
+            ], 401);
+        }
     }
 }
