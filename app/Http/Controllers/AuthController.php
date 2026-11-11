@@ -21,5 +21,31 @@ class AuthController extends Controller
                 'message' => 'ID card number or password incorrect'
             ]);
         }
+
+        $society->tokens->delete();
+        $token = $society->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'data' => [
+                'name' => $society->name,
+                'born_date' => $society->born_date,
+                'gender' => $society->gender,
+                'address' => $society->address,
+                'token' => $token,
+                'regional' => $society->regional ? [
+                    'id' => $society->regional->id,
+                    'province' => $society->regional->province,
+                    'district' => $society->regional->district,
+                ] : []
+            ]
+        ], 200);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken->delete();
+        return response()->json([
+            'message' => 'Logout success'
+        ]);
     }
 }
